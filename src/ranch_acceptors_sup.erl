@@ -1,4 +1,4 @@
-%% Copyright (c) 2011-2014, Loïc Hoguin <essen@ninenines.eu>
+%% Copyright (c) 2011-2013, Loïc Hoguin <essen@ninenines.eu>
 %%
 %% Permission to use, copy, modify, and/or distribute this software for any
 %% purpose with or without fee is hereby granted, provided that the above
@@ -31,11 +31,17 @@ init([Ref, NbAcceptors, Transport, TransOpts]) ->
 			Socket;
 		Socket ->
 			Socket
-	end,
+  end,
+  AcceptorModule = case proplists:get_value(acceptor,TransOpts) of
+    undefined ->
+      ranch_acceptor;
+    Module ->
+      Module
+  end,
 	{ok, {_, Port}} = Transport:sockname(LSocket),
 	ranch_server:set_port(Ref, Port),
 	Procs = [
-		{{acceptor, self(), N}, {ranch_acceptor, start_link, [
+		{{acceptor, self(), N}, {AcceptorModule, start_link, [
 			LSocket, Transport, ConnsSup
 		]}, permanent, brutal_kill, worker, []}
 			|| N <- lists:seq(1, NbAcceptors)],
